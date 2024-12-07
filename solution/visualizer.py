@@ -2,30 +2,26 @@ from PIL import Image, ImageOps
 import cairosvg
 import io
 import math
+import matplotlib.pyplot as plt
 
-def overlay_svg_on_png(png_path, svg_path, output_path, x, y, angle):
+def overlay_png_on_png(png_path, overlay_path, output_path, x, y, angle):
     """
-    Combines an SVG onto a PNG at a specified position and angle.
+    Combines a PNG onto another PNG at a specified position and angle.
 
     :param png_path: Path to the input PNG file.
-    :param svg_path: Path to the input SVG file.
+    :param overlay_path: Path to the input overlay PNG file.
     :param output_path: Path to save the resulting image.
-    :param x: X-coordinate for the top-left corner of the SVG on the PNG.
-    :param y: Y-coordinate for the top-left corner of the SVG on the PNG.
-    :param angle: Rotation angle for the SVG in degrees.
+    :param x: X-coordinate for the top-left corner of the overlay PNG on the base PNG.
+    :param y: Y-coordinate for the top-left corner of the overlay PNG on the base PNG.
+    :param angle: Rotation angle for the overlay PNG in degrees.
     """
     # Load the PNG image
     png_image = Image.open(png_path).convert("RGBA")
 
-    # Convert the SVG to a rasterized image using cairosvg
-    with open(svg_path, "rb") as svg_file:
-        svg_data = svg_file.read()
-        png_data = cairosvg.svg2png(bytestring=svg_data)
+        # Open the overlay PNG as a PIL image
+    svg_image = Image.open(overlay_path).convert("RGBA")
 
-    # Open the rendered SVG as a PIL image
-    svg_image = Image.open(io.BytesIO(png_data)).convert("RGBA")
-
-    # Enhance the dots in the SVG by isolating non-transparent pixels and brightening them
+        # Enhance the dots in the SVG by isolating non-transparent pixels and brightening them
     pixels = svg_image.load()
     for j in range(svg_image.size[1]):
         for i in range(svg_image.size[0]):
@@ -52,13 +48,9 @@ def overlay_svg_on_png(png_path, svg_path, output_path, x, y, angle):
     # Save the result
     result_image.save(output_path, "PNG")
 
-# Example usage
-if __name__ == "__main__":
-    overlay_svg_on_png(
-        png_path="background.png",
-        svg_path="overlay.svg",
-        output_path="output.png",
-        x=100,
-        y=150,
-        angle=45
-    )
+
+def visualize_matrix(matrix, path):
+    plt.imshow(matrix)
+    # plt.colorbar()
+    plt.savefig(path)
+    plt.show()

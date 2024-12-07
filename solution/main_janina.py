@@ -8,10 +8,55 @@ import cv2
 import numpy as np
 from scipy.optimize import minimize
 import cairosvg
-from visualizer import overlay_svg_on_png
+from visualizer import overlay_png_on_png, visualize_matrix
+import math
 
 i = 0
 
+
+def generate_clean_mask(image_path):
+    # Read the input image
+    image_unchanged = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    b, g, r, a = cv2.split(image_unchanged)
+
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    image[a == 0] = 255
+
+    smoothed_image = cv2.GaussianBlur(image, (5, 5), 5)
+    visualize_matrix(smoothed_image, "solution/visualization/1_smoothed_image.png")
+
+    # Threshold to create an initial binary mask
+    _, binary_mask = cv2.threshold(smoothed_image, 127, 255, cv2.THRESH_BINARY)
+
+    visualize_matrix(binary_mask, "solution/visualization/2_binary_mask.png")
+
+    # Remove small noise and dust
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary_mask, connectivity=8)
+    min_area = 10  # Adjust as needed
+    cleaned_mask = np.zeros_like(binary_mask)
+    print("num_lables:", num_labels)
+    visualize_matrix(labels, "solution/visualization/3_labels.png")
+
+
+    for i in range(1, num_labels):  # Skip the background
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+            cleaned_mask[labels == i] = 255
+
+    visualize_matrix(cleaned_mask, "solution/visualization/4_cleand_mask.png")
+
+    # Edge detection and contour filling for borders
+    edges = cv2.Canny(cleaned_mask, threshold1=50, threshold2=150)
+    visualize_matrix(edges, "solution/visualization/edges.png")
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    print("contours:", contours)
+    # visualize_matrix(contours, "solution/visualization/contours.png")
+
+    final_mask = np.zeros_like(cleaned_mask)
+    cv2.drawContours(final_mask, contours, -1, (255), thickness=cv2.FILLED)
+
+    visualize_matrix(final_mask, "solution/visualization/5_final_mask.png")
+
+    return final_mask
 
 def load_and_preprocess_part(image_path):
     image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -37,6 +82,11 @@ def gripper_collision_check(part_mask, gripper_mask, x, y, theta):
     # Get dimensions of the rotated gripper
     g_h, g_w = rotated_gripper.shape
     p_h, p_w = part_mask.shape
+    print("HERE")
+    print(part_mask)
+    visualize_matrix(rotation_matrix, "solution/visualization/rotated_gripper.png")
+    visualize_matrix(part_mask, "solution/visualization/part_mask.png")
+    visualize_matrix(gripper_mask, "solution/visualization/gripper_mask.png")
 
     # Ensure gripper fits within part mask bounds
     if x < 0 or y < 0 or x + g_w > p_w or y + g_h > p_h:
@@ -57,14 +107,18 @@ def objective_function(params, part_mask, gripper_mask, part_path, gripper_path)
     x, y, theta = params
     global i
     print("params:", params)
-    overlay_svg_on_png(
-        png_path=part_path,
-        svg_path=gripper_path,
-        output_path='solution/visualization/combination_' + str(i) + '.png',
-        x=x,
-        y=y,
-        angle=theta)
-    i += 1
+    if not math.isnan(params[0]):
+        print("visualize")
+        overlay_png_on_png(
+            png_path=part_path,
+            overlay_path=gripper_path,
+            output_path='solution/visualization/combination_' + str(i) + '.png',
+            x=x,
+            y=y,
+            angle=theta)
+        i += 1
+    else:
+        print("param is none")
     if gripper_collision_check(part_mask, gripper_mask, int(x), int(y), theta):
         return float('inf')  # Penalize collisions
     # Minimize distance from part center (for balance)
@@ -74,14 +128,21 @@ def objective_function(params, part_mask, gripper_mask, part_path, gripper_path)
 
 
 def find_best_gripper_position(part_path, gripper_path):
-    part_mask = load_and_preprocess_part(part_path)
+    part_mask = generate_clean_mask(part_path)
     gripper_mask = load_and_preprocess_part(gripper_path)
     print("gripper_path:", gripper_path)
 
     # Initial guess
-    initial_guess = [(part_mask.shape[1] // 2),
-                     (part_mask.shape[0] // 2), 0]
+    initial_guess = [(part_mask.shape[1] // 2) - (gripper_mask.shape[1] // 2),
+                     (part_mask.shape[0] // 2) - (gripper_mask.shape[0] // 2), 0]
     print(initial_guess)
+    overlay_png_on_png(
+        png_path=part_path,
+        overlay_path=gripper_path,
+        output_path='solution/visualization/initial_guess.png',
+        x=initial_guess[0],
+        y=initial_guess[1],
+        angle=initial_guess[2])
 
     # Bounds
     bounds = [(0, part_mask.shape[1]), (0, part_mask.shape[0]), (0, 360)]
