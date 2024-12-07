@@ -17,6 +17,7 @@ def main():
     )
     args = parser.parse_args()
     command = args.command.strip()
+    print(command)
     if not command:
         raise ValueError("Command is empty")
 

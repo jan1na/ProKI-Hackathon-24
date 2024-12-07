@@ -1,3 +1,6 @@
 pandas
 numpy
 rich
+opencv-python
+scipy
+cairosvg
