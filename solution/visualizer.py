@@ -1,4 +1,4 @@
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageDraw
 import cairosvg
 import io
 import math
@@ -15,8 +15,12 @@ def overlay_png_on_png(png_path, overlay_path, output_path, x, y, angle):
     :param y: Y-coordinate for the top-left corner of the overlay PNG on the base PNG.
     :param angle: Rotation angle for the overlay PNG in degrees.
     """
+
+    print("x:", x)
+    print("y:", y)
     # Load the PNG image
     png_image = Image.open(png_path).convert("RGBA")
+    print(png_image.size)
 
         # Open the overlay PNG as a PIL image
     svg_image = Image.open(overlay_path).convert("RGBA")
@@ -40,10 +44,15 @@ def overlay_png_on_png(png_path, overlay_path, output_path, x, y, angle):
     canvas = Image.new("RGBA", png_image.size, (255, 255, 255, 0))
 
     # Paste the rotated SVG image onto the canvas at the specified position
-    canvas.paste(svg_image, (int(x), int(y)), svg_image)
+    canvas.paste(svg_image, (int(x) - svg_image.size[0]//2, int(y) - svg_image.size[1]//2), svg_image)
 
     # Composite the canvas and PNG
     result_image = Image.alpha_composite(png_image, canvas)
+    # Draw a small circle at the specified position
+    draw = ImageDraw.Draw(result_image)
+    draw.ellipse((x-2, y-2, x+2, y+2), fill=(255, 0, 0, 255))  # Red circle with radius 5
+    draw.ellipse((197 - 2, 200 - 2, 197 + 2, 200 + 2), fill=(0, 255, 0, 255))  # Red circle with radius 5
+    print(result_image.size)
 
     # Save the result
     result_image.save(output_path, "PNG")
