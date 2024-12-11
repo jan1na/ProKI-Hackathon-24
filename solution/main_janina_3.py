@@ -187,25 +187,67 @@ def optimize_gripper_position_2(gripper_positions, gripper_center, contour, hole
 
     return best_position, best_angle
 
-def get_all_angles(x, y, radius, matrix):
+def get_all_angles_2(x, y, radius, matrix):
     angles = []
+    rotated_positions = set()
+    circle_matrix = np.zeros((2 * radius + 1, 2 * radius + 1), dtype=float)
     # Iterate over all potential positions on the matrix
     for r in range(-radius, radius + 1):
         for c in range(-radius, radius + 1):
             # Check if the position satisfies the circle equation
             if round(np.sqrt(r ** 2 + c ** 2)) == radius:  # Using Euclidean distance
                 new_row, new_col = y + r, x + c
+                circle_matrix[r + radius, c + radius] = 1
                 # Check if within bounds of the matrix
                 if 0 <= new_row < matrix.shape[0] and 0 <= new_col < matrix.shape[1]:
                     if matrix[new_row, new_col] == 1:
                         # Calculate the angle
                         angle = np.arctan2(r, c)
+                        rotated_positions.add((new_row, new_col))
                         angles.append(angle)
+    visualize_matrix(circle_matrix, "solution/visualization/circle_matrix.png")
 
-    return angles
+    return angles, rotated_positions
 
 
-def optimize_gripper_position(gripper_positions, gripper_center, contour, holes_mask):
+def get_all_angles(x, y, matrix, radius_matrix):
+    rows, cols = matrix.shape
+    rows_radius, cols_radius = radius_matrix.shape
+
+    radius_mask_shifted = np.zeros_like(matrix)
+    # visualize_matrix(radius_mask, "solution/visualization/radius_mask.png")
+    x_shift = x - radius_matrix.shape[1] // 2
+    y_shift = y - radius_matrix.shape[0] // 2
+
+    # Calculate the valid range for the shifted matrix
+    x_start = max(0, x_shift)
+    x_end = min(cols, x_shift + cols_radius)
+
+    y_start = max(0, y_shift)
+    y_end = min(rows, y_shift + rows_radius)
+
+    # Determine corresponding ranges in the original matrix
+    orig_x_start = max(0, -x_shift)
+    orig_x_end = orig_x_start + (x_end - x_start)
+
+    orig_y_start = max(0, -y_shift)
+    orig_y_end = orig_y_start + (y_end - y_start)
+
+    # Copy the valid range from the original matrix to the shifted matrix
+    radius_mask_shifted[y_start:y_end, x_start:x_end] = radius_matrix[orig_y_start:orig_y_end, orig_x_start:orig_x_end]
+    # visualize_matrix(radius_mask_shifted, "solution/visualization/radius_mask_shifted.png")
+
+    intersections = np.argwhere(np.bitwise_and(matrix, radius_mask_shifted, out=matrix) == 1)
+
+    angeles = []
+    for intersection in intersections:
+        y_, x_ = intersection
+        angle = np.arctan2(y_ - y, x_ - x)
+        angeles.append(angle)
+
+    return angeles
+
+def optimize_gripper_position_2(gripper_positions, gripper_center, contour, holes_mask):
     rows, cols = holes_mask.shape
     kernel = create_gripper_kernel(gripper_positions[0][2])
     #TODO: consider gripper with only one dot
@@ -219,6 +261,9 @@ def optimize_gripper_position(gripper_positions, gripper_center, contour, holes_
     for y in range(filtered_matrix.shape[0]):
         for x in range(filtered_matrix.shape[1]):
             if filtered_matrix[y, x] == 1:
+                highligthed_matrix = filtered_matrix.copy()
+                highligthed_matrix[y][x] = 2
+                visualize_matrix(highligthed_matrix, "solution/visualization/highligthed_matrix.png")
                 angles = get_all_angles(x, y, fist_dist, filtered_matrix)
                 print(len(angles))
                 for angle in angles:
@@ -239,9 +284,54 @@ def optimize_gripper_position(gripper_positions, gripper_center, contour, holes_
                             break
                     if found:
                         print("Found")
+                        return x, y, angle
 
+def optimize_gripper_position(gripper_positions, gripper_center, contour, holes_mask):
+    first_dist = int(np.sqrt((gripper_positions[0][0] - gripper_positions[1][0]) ** 2 + (
+            gripper_positions[0][1] - gripper_positions[1][1]) ** 2))
+    circle_matrix = np.zeros((2 * first_dist + 1, 2 * first_dist + 1), dtype=float)
+    for r in range(-first_dist, first_dist + 1):
+        for c in range(-first_dist, first_dist + 1):
+            if round(np.sqrt(r ** 2 + c ** 2)) == first_dist:  # Using Euclidean distance
+                circle_matrix[r + first_dist, c + first_dist] = 1
+    visualize_matrix(circle_matrix, "solution/visualization/circle_matrix.png")
 
+    rows, cols = holes_mask.shape
+    kernel = create_gripper_kernel(gripper_positions[0][2])
+    # TODO: consider gripper with only one dot
+    possible_gripper_positions = convolve2d(holes_mask, kernel, mode='same', boundary='fill', fillvalue=0)
+    filtered_matrix = np.where(possible_gripper_positions == kernel.sum(), 1, 0)
+    visualize_matrix(filtered_matrix, "solution/visualization/filtered_matrix.png")
 
+    visualize_matrix(circle_matrix, "solution/visualization/circle_matrix.png")
+    for y in range(filtered_matrix.shape[0]):
+        for x in range(filtered_matrix.shape[1]):
+            if filtered_matrix[y, x] == 1:
+                highligthed_matrix = filtered_matrix.copy()
+                highligthed_matrix[y, x] = 2
+                visualize_matrix(highligthed_matrix, "solution/visualization/highligthed_matrix.png")
+                angles = get_all_angles(x, y, holes_mask, circle_matrix)
+                for angle in angles:
+                    rotation_matrix = np.array([
+                        [np.cos(angle), -np.sin(angle)],
+                        [np.sin(angle), np.cos(angle)]
+                    ])
+                    found = True
+                    rotation_center = np.array([[y], [x]])
+                    for x_g, y_g, radius in gripper_positions[2:]:
+                        original_point = np.array([[y_g], [x_g]])
+                        rotated_point = (
+                                    (rotation_matrix @ (original_point - rotation_center)) + rotation_center).flatten()
+                        if 0 <= int(rotated_point[1]) < cols and 0 <= int(rotated_point[0]) < rows:
+                            if filtered_matrix[int(rotated_point[0]), int(rotated_point[1])] == 0:
+                                found = False
+                                break
+                        else:
+                            found = False
+                            break
+                    if found:
+                        print("Found")
+                        return x, y, angle
 
 
 def compute_amazing_solution(part_image_path, gripper_image_path):
