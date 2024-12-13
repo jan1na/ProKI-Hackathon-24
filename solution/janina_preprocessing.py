@@ -63,11 +63,12 @@ def extract_features(binary_image):
     cv2.drawContours(mask, contours, -1, (255), thickness=-1)  # Fill the areas
     holes_mask = cv2.bitwise_not(mask)
     holes_mask = holes_mask//255
+    inv_holes_mask = mask//255
     visualize_matrix(mask, "solution/visualization/mask.png")
     print(holes_mask)
     #visualize_matrix(holes_mask, "solution/visualization/holes_mask.png")
 
-    return largest_contour, holes_mask
+    return largest_contour, holes_mask, inv_holes_mask
 
 
 def extract_gripper_positions(gripper_image_path):

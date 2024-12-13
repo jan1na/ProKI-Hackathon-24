@@ -51,8 +51,6 @@ def overlay_png_on_png(png_path, overlay_path, output_path, x, y, angle):
     # Draw a small circle at the specified position
     draw = ImageDraw.Draw(result_image)
     draw.ellipse((x-2, y-2, x+2, y+2), fill=(255, 0, 0, 255))  # Red circle with radius 5
-    draw.ellipse((197 - 2, 200 - 2, 197 + 2, 200 + 2), fill=(0, 255, 0, 255))  # Red circle with radius 5
-    print(result_image.size)
 
     # Save the result
     result_image.save(output_path, "PNG")
