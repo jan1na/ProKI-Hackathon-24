@@ -1,6 +1,6 @@
 import numpy as np
-from visualizer import visualize_matrix, overlay_png_on_png
-from janina_preprocessing import preprocess_image, extract_features, extract_gripper_positions
+from visualizer import visualize_matrix, overlay_png_on_png, visualize_gripper_on_mask
+from janina_preprocessing import preprocess_image, extract_features, extract_gripper_positions, k_means_clustering
 from scipy.ndimage import rotate
 inv_part_mask: np.ndarray
 gripper_mask: np.ndarray
@@ -105,12 +105,17 @@ def simulated_annealing(initial_solution):
 
 def find_best_gripper_position(part_image_path, gripper_image_path):
     global gripper_mask, inv_part_mask
+    k_means_clustering(part_image_path)
     metal_image, gray_metal, binary_metal, alpha_metal = preprocess_image(part_image_path)
     metal_contour, holes_mask, inv_part_mask = extract_features(binary_metal)
     gripper_positions, gripper_center, gripper_mask = extract_gripper_positions(gripper_image_path)
 
     initial_solution = (holes_mask.shape[1]//2, holes_mask.shape[0]//2, 0)
     best_solution = simulated_annealing(initial_solution)
+
+    visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
+                              'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-2]
+                              + '.png')
 
     overlay_png_on_png(
         png_path=part_image_path,
