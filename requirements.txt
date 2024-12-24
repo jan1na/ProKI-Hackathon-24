@@ -8,5 +8,4 @@ matplotlib
 torch
 scikit-learn
 albumentations
-tensorflow==2.10.0
-segmentation-models
+tensorflow==2.17.0

@@ -1,3 +1,14 @@
+Installation:
+
+
+```bash
+pip install -r requirements.txt
+pip install git+https://github.com/qubvel/segmentation_models.git
+```
+
+
+
+
 # Hackathon 2024
 
 Welcome, and thank you for participating! This repository contains a skeleton for your submission to the Hackathon 2024.
