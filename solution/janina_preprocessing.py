@@ -3,6 +3,7 @@ import numpy as np
 from visualizer import visualize_matrix
 from scipy.ndimage import convolve
 from sklearn.cluster import KMeans
+from PIL import Image
 
 
 def k_means_clustering(image_path):
@@ -157,6 +158,7 @@ def extract_gripper_positions(gripper_image_path):
     # Preprocess the gripper image
     image = cv2.imread(gripper_image_path, cv2.IMREAD_GRAYSCALE)
     _, binary = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+    visualize_matrix(binary, "solution/visualization/gripper_binary.png")
 
     # Detect the active "dots" of the gripper
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -174,18 +176,24 @@ def extract_gripper_positions(gripper_image_path):
     # print("Gripper positions:", gripper_positions)
     gripper_center = binary.shape[1] // 2, binary.shape[0] // 2
 
+    label_image = np.array(Image.open(gripper_image_path).convert("L"))
+    binary = (label_image != 0).astype(int)
+
     # TEST: make gripper radius bigger
     # _________________________________________________________________________________
     # Define a kernel to set the neighborhood
     size = 11
-    radius = 5
+    radius = size // 2
     kernel = np.zeros((size, size))  # 3x3 kernel will set all neighbors to 1
     for i in range(size):
         for j in range(size):
             # Calculate Euclidean distance from (i, j) to center (cx, cy)
             if np.sqrt((i - radius)**2 + (j - radius)**2) <= radius:
                 kernel[i, j] = 1
-    print(kernel)
+    #print(kernel)
+
+    # pad binary image
+    binary = np.pad(binary, pad_width=radius, mode='constant', constant_values=0)
 
     # Apply convolution
     binary = convolve(binary, kernel, mode='constant', cval=0)
@@ -194,4 +202,6 @@ def extract_gripper_positions(gripper_image_path):
     binary = (binary > 0).astype(int)
     # _________________________________________________________________________________
 
+
+    visualize_matrix(binary, "solution/visualization/gripper_binary.png")
     return gripper_positions, gripper_center, binary

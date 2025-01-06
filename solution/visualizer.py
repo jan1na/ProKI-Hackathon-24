@@ -58,10 +58,11 @@ def overlay_png_on_png(png_path, overlay_path, output_path, x, y, angle):
 
 
 def visualize_matrix(matrix, path):
-    plt.imshow(matrix)
+    plt.imshow(matrix, cmap="gray")
     # plt.colorbar()
     plt.savefig(path)
     plt.show()
+    plt.close()
 
 def visualize_gripper_on_mask(mask_matrix, gripper_path, x, y, angle, path):
     # Load the gripper image
