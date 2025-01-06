@@ -40,7 +40,7 @@ def get_refined_mask(output, kernel_size=3):
 
 
 # Path to your model and test data
-model_path = "solution/deeplabv3_binary_segmentation_42_i_test_overfitting.pth"
+model_path = "solution/deeplabv3_binary_segmentation_42_i_correct.pth"
 test_data_dir = r"data/train_data/images"
 
 # Load the pre-trained model and redefine the classifier for binary segmentation

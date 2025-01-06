@@ -1,0 +1,13 @@
+part,gripper
+data/train_data/images/image_24.png,data/raw/part_24/1.png
+data/train_data/images/image_24_i.png,data/raw/part_24/1.png
+data/train_data/images/image_24.png,data/raw/part_24/4.png
+data/train_data/images/image_24_i.png,data/raw/part_24/4.png
+data/train_data/images/image_25.png,data/raw/part_25/4.png
+data/train_data/images/image_25_i.png,data/raw/part_25/4.png
+data/train_data/images/image_26.png,data/raw/part_26/2.png
+data/train_data/images/image_26_i.png,data/raw/part_26/2.png
+data/train_data/images/image_26.png,data/raw/part_26/5.png
+data/train_data/images/image_26_i.png,data/raw/part_26/5.png
+data/train_data/images/image_27.png,data/raw/part_27/2.png
+data/train_data/images/image_27_i.png,data/raw/part_27/2.png

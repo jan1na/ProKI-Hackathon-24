@@ -7,7 +7,7 @@ from PIL import Image
 import torch.nn as nn
 
 kernel_size = 5
-model_path = "solution/deeplabv3_binary_segmentation_42_i.pth"
+model_path = "solution/deeplabv3_binary_segmentation_42_i_correct.pth"
 
 
 def get_refined_mask(output):

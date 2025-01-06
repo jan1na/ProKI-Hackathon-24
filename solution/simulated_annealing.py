@@ -46,20 +46,20 @@ def objective_function(x, y, angle):
         #print("here")
         #print(rotated_gripper_mask.sum(), rotated_small_matrix.sum())
         #visualize_matrix(rotated_gripper_mask, "solution/visualization/rotated_gripper_mask.png")
-        return float('inf') - (rotated_small_matrix.sum() - rotated_gripper_mask.sum())
+        return float('inf') - (rotated_small_matrix.sum() - rotated_gripper_mask.sum()), False
 
     biggest_dist = np.sqrt((cols//2)**2 + (rows//2)**2)
     intersection = np.sum(np.bitwise_and(inv_part_mask, rotated_gripper_mask))
     dist_to_center = np.sqrt((cols/2 - x)**2 + (rows/2 - y)**2)
     if intersection == 0:
-        return dist_to_center
-    return intersection + biggest_dist
+        return dist_to_center, True
+    return intersection + biggest_dist, True
 
 
 def simulated_annealing(initial_solution):
     # Start with the initial solution
     current_solution = initial_solution
-    current_value = objective_function(current_solution[0], current_solution[1], current_solution[2])
+    current_value, not_outside = objective_function(current_solution[0], current_solution[1], current_solution[2])
 
     # Set the initial temperature
     temperature = temp_init
@@ -79,7 +79,7 @@ def simulated_annealing(initial_solution):
                              max(0, min(current_solution[1] + np.random.randint(-1, 2), inv_part_mask.shape[0] - 1)),
                              current_solution[2] + np.random.uniform(-5, 5) % 360]
 
-        neighbor_value = objective_function(*neighbor_solution)
+        neighbor_value, not_outside = objective_function(*neighbor_solution)
 
         # Calculate the difference in objective values
         delta_e = neighbor_value - current_value
@@ -122,12 +122,22 @@ def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
     best_value = float('inf')
 
     for _ in range(num_runs):
+        angle = 0
+        while angle < 360:
+            current_value, not_outside = objective_function(*initial_solution)
+            if not_outside:
+                break
+            else:
+                angle += 5
+                initial_solution = (initial_solution[0], initial_solution[1], angle)
+
         current_solution = simulated_annealing(initial_solution)
-        current_value = objective_function(*current_solution)
+        current_value, not_outside = objective_function(*current_solution)
         if current_value < best_value:
             best_solution = current_solution
             best_value = current_value
 
+    """
     visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
                               'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-2]
                               + '.png')
@@ -139,7 +149,7 @@ def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
         x=best_solution[0],
         y=best_solution[1],
         angle=best_solution[2])
-
+    """
     return best_solution[0], best_solution[1], best_solution[2]
 
 def find_best_gripper_position_2(part_image_path, gripper_image_path):
