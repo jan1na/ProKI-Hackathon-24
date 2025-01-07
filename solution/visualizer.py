@@ -61,7 +61,6 @@ def visualize_matrix(matrix, path):
     plt.imshow(matrix, cmap="gray")
     # plt.colorbar()
     plt.savefig(path)
-    plt.show()
     plt.close()
 
 def visualize_gripper_on_mask(mask_matrix, gripper_path, x, y, angle, path):

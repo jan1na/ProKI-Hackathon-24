@@ -131,9 +131,9 @@ def main():
 
     # Paths
     directory = Path(__file__).parent
-    input_file = directory / "task.csv"
-    output_file = directory / "tool_output.csv"
-    ground_truth_file = directory / "ground_truth.csv"
+    input_file = directory / "task_all.csv"
+    output_file = directory / "tool_output_all.csv"
+    ground_truth_file = directory / "ground_truth_all.csv"
 
     # Call the program
     return_code = check_call([*command.split(" "), str(input_file), str(output_file)])

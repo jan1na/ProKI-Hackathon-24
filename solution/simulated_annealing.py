@@ -10,6 +10,8 @@ max_iter = 1000
 alpha = 0.999
 temp_min = 1e-6
 
+np.random.seed(42)
+
 def objective_function(x, y, angle):
     # Rotate the smaller matrix around its center
     rotated_small_matrix = rotate(gripper_mask, angle, reshape=True, order=1, mode='constant', cval=0)
@@ -23,17 +25,15 @@ def objective_function(x, y, angle):
     y_shift = y - rows_gripper // 2
 
     # Calculate the valid range for the shifted matrix
-    x_start = max(0, x_shift)
-    x_end = min(cols, x_shift + cols_gripper)
+    x_start = np.maximum(0, x_shift)
+    x_end = np.minimum(cols, x_shift + cols_gripper)
+    y_start = np.maximum(0, y_shift)
+    y_end = np.minimum(rows, y_shift + rows_gripper)
 
-    y_start = max(0, y_shift)
-    y_end = min(rows, y_shift + rows_gripper)
-
-    # Determine corresponding ranges in the original matrix
-    orig_x_start = max(0, -x_shift)
+    orig_x_start = np.maximum(0, -x_shift)
     orig_x_end = orig_x_start + (x_end - x_start)
 
-    orig_y_start = max(0, -y_shift)
+    orig_y_start = np.maximum(0, -y_shift)
     orig_y_end = orig_y_start + (y_end - y_start)
 
     # Copy the valid range from the original matrix to the shifted matrix
@@ -75,9 +75,12 @@ def simulated_annealing(initial_solution):
     for i in range(max_iter):
         # print("Iteration:", i, "Best value:", best_value)
         # Generate a neighbor solution by making a small random change
-        neighbor_solution = [max(0, min(current_solution[0] + np.random.randint(-1, 2), inv_part_mask.shape[1] - 1)),
-                             max(0, min(current_solution[1] + np.random.randint(-1, 2), inv_part_mask.shape[0] - 1)),
-                             current_solution[2] + np.random.uniform(-5, 5) % 360]
+        shifts = np.random.randint(-1, 2, size=2)
+        neighbor_solution = [
+            max(0, min(current_solution[0] + shifts[0], inv_part_mask.shape[1] - 1)),
+            max(0, min(current_solution[1] + shifts[1], inv_part_mask.shape[0] - 1)),
+            (current_solution[2] + np.random.uniform(-5, 5)) % 360
+        ]
 
         neighbor_value, not_outside = objective_function(*neighbor_solution)
 
@@ -137,11 +140,11 @@ def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
             best_solution = current_solution
             best_value = current_value
 
-    """
-    visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
-                              'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-2]
-                              + '.png')
 
+    #visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
+    #                          'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-1]
+    #                          + '.png')
+    """
     overlay_png_on_png(
         png_path=part_image_path,
         overlay_path=gripper_image_path,
