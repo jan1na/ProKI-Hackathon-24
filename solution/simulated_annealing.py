@@ -1,8 +1,8 @@
 import numpy as np
-from visualizer import visualize_matrix, overlay_png_on_png, visualize_gripper_on_mask
 from deeplabv3_resnet101_preprocessing import predict
-from janina_preprocessing import extract_gripper_positions
+from janina_preprocessing import get_gripper_binary
 from scipy.ndimage import rotate
+
 inv_part_mask: np.ndarray
 gripper_mask: np.ndarray
 temp_init = 100
@@ -10,17 +10,26 @@ max_iter = 1000
 alpha = 0.999
 temp_min = 1e-6
 
+# Set random seed for reproducibility
 np.random.seed(42)
 
-def objective_function(x, y, angle):
-    # Rotate the smaller matrix around its center
+
+def objective_function(x: int, y: int, angle: float) -> (float, bool):
+    """
+    Objective function to minimize the distance to the center of the part.
+
+    :param x: x-coordinate of the gripper
+    :param y: y-coordinate of the gripper
+    :param angle: angle of the gripper
+    :return: distance to the center of the part, not outside the image
+    """
+    # Rotate the gripper mask by the given angle
     rotated_small_matrix = rotate(gripper_mask, angle, reshape=True, order=1, mode='constant', cval=0)
 
     rows, cols = inv_part_mask.shape
     rows_gripper, cols_gripper = rotated_small_matrix.shape
 
     rotated_gripper_mask = np.zeros_like(inv_part_mask)
-    # visualize_matrix(radius_mask, "solution/visualization/radius_mask.png")
     x_shift = x - cols_gripper // 2
     y_shift = y - rows_gripper // 2
 
@@ -37,26 +46,28 @@ def objective_function(x, y, angle):
     orig_y_end = orig_y_start + (y_end - y_start)
 
     # Copy the valid range from the original matrix to the shifted matrix
-    rotated_gripper_mask[y_start:y_end, x_start:x_end] = rotated_small_matrix[orig_y_start:orig_y_end, orig_x_start:orig_x_end]
+    rotated_gripper_mask[y_start:y_end, x_start:x_end] = rotated_small_matrix[orig_y_start:orig_y_end,
+                                                         orig_x_start:orig_x_end]
 
-
-    #visualize_matrix((1 - rotated_gripper_mask), "solution/visualization/rotated_gripper_mask.png")
-
+    # Check if the rotated gripper mask is valid
     if rotated_gripper_mask.sum() < rotated_small_matrix.sum():
-        #print("here")
-        #print(rotated_gripper_mask.sum(), rotated_small_matrix.sum())
-        #visualize_matrix(rotated_gripper_mask, "solution/visualization/rotated_gripper_mask.png")
         return float('inf') - (rotated_small_matrix.sum() - rotated_gripper_mask.sum()), False
 
-    biggest_dist = np.sqrt((cols//2)**2 + (rows//2)**2)
+    biggest_dist = np.sqrt((cols // 2) ** 2 + (rows // 2) ** 2)
     intersection = np.sum(np.bitwise_and(inv_part_mask, rotated_gripper_mask))
-    dist_to_center = np.sqrt((cols/2 - x)**2 + (rows/2 - y)**2)
+    dist_to_center = np.sqrt((cols / 2 - x) ** 2 + (rows / 2 - y) ** 2)
     if intersection == 0:
         return dist_to_center, True
     return intersection + biggest_dist, True
 
 
-def simulated_annealing(initial_solution):
+def simulated_annealing(initial_solution: (int, int, float)) -> (int, int, float):
+    """
+    Simulated Annealing algorithm to find the best gripper position.
+
+    :param initial_solution: initial solution
+    :return: x, y, angle of the best gripper position
+    """
     # Start with the initial solution
     current_solution = initial_solution
     current_value, not_outside = objective_function(current_solution[0], current_solution[1], current_solution[2])
@@ -68,12 +79,8 @@ def simulated_annealing(initial_solution):
     best_solution = current_solution
     best_value = current_value
 
-    # List to store solutions for plotting or analysis
-    solutions = [(current_solution, current_value)]
-
     # Start the main loop of the simulated annealing process
     for i in range(max_iter):
-        # print("Iteration:", i, "Best value:", best_value)
         # Generate a neighbor solution by making a small random change
         shifts = np.random.randint(-1, 2, size=2)
         neighbor_solution = [
@@ -103,9 +110,6 @@ def simulated_annealing(initial_solution):
             best_solution = current_solution
             best_value = current_value
 
-        # Record the current solution for analysis
-        solutions.append((current_solution, current_value))
-
         # Reduce the temperature according to the cooling schedule
         temperature = temperature * alpha
         if temperature < temp_min:
@@ -113,12 +117,21 @@ def simulated_annealing(initial_solution):
 
     return best_solution
 
-def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
+
+def find_best_gripper_position(part_image_path: str, gripper_image_path: str, num_runs: int = 3) -> (int, int, float):
+    """
+    Find the best gripper position using simulated annealing.
+
+    :param part_image_path: path to the part image
+    :param gripper_image_path: path to the gripper image
+    :param num_runs: number of runs for the simulated annealing algorithm
+    :return: x, y, angle of the best gripper position
+    """
     global gripper_mask, inv_part_mask
     part_mask = predict(part_image_path)
     inv_part_mask = 1 - part_mask
 
-    gripper_positions, gripper_center, gripper_mask = extract_gripper_positions(gripper_image_path)
+    gripper_mask = get_gripper_binary(gripper_image_path)
 
     initial_solution = (inv_part_mask.shape[1] // 2, inv_part_mask.shape[0] // 2, 0)
     best_solution = initial_solution
@@ -126,6 +139,7 @@ def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
 
     for _ in range(num_runs):
         angle = 0
+        # Find an initial angle with which the gripper is not outside the image
         while angle < 360:
             current_value, not_outside = objective_function(*initial_solution)
             if not_outside:
@@ -139,43 +153,5 @@ def find_best_gripper_position(part_image_path, gripper_image_path, num_runs=3):
         if current_value < best_value:
             best_solution = current_solution
             best_value = current_value
-
-
-    #visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
-    #                          'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-1]
-    #                          + '.png')
-    """
-    overlay_png_on_png(
-        png_path=part_image_path,
-        overlay_path=gripper_image_path,
-        output_path='solution/visualization/final_solution_' + str(part_image_path).split('/')[-2] + '.png',
-        x=best_solution[0],
-        y=best_solution[1],
-        angle=best_solution[2])
-    """
-    return best_solution[0], best_solution[1], best_solution[2]
-
-def find_best_gripper_position_2(part_image_path, gripper_image_path):
-    global gripper_mask, inv_part_mask
-    part_mask = predict(part_image_path)
-    inv_part_mask = 1 - part_mask
-    # visualize_matrix(inv_part_mask, 'solution/visualization/inv_part_mask_' + str(part_image_path).split('/')[-2] + '.png')
-
-    gripper_positions, gripper_center, gripper_mask = extract_gripper_positions(gripper_image_path)
-
-    initial_solution = (inv_part_mask.shape[1]//2, inv_part_mask.shape[0]//2, 0)
-    best_solution = simulated_annealing(initial_solution)
-
-    visualize_gripper_on_mask(inv_part_mask, gripper_image_path, best_solution[0], best_solution[1], best_solution[2],
-                              'solution/visualization/final_gripper_on_mask_' + str(part_image_path).split('/')[-2]
-                              + '.png')
-
-    overlay_png_on_png(
-        png_path=part_image_path,
-        overlay_path=gripper_image_path,
-        output_path='solution/visualization/final_solution_' + str(part_image_path).split('/')[-2] + '.png',
-        x=best_solution[0],
-        y=best_solution[1],
-        angle=best_solution[2])
 
     return best_solution[0], best_solution[1], best_solution[2]
