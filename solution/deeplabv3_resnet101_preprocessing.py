@@ -9,6 +9,7 @@ import torch.nn as nn
 kernel_size = 3
 model_path = "solution/deeplabv3_binary_segmentation_42_i_correct.pth"
 
+
 def get_refined_mask(output):
     moved = output.squeeze() - output.squeeze().min()
     output_predictions = (moved > 0.85 * moved.max()).float()
@@ -36,6 +37,7 @@ model.eval()
 transform = transforms.Compose([transforms.ToTensor(),  # Convert to Tensor without resizing
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize
                                 ])
+
 
 # Function to make predictions
 def predict(image_path):

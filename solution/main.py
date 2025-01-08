@@ -6,6 +6,7 @@ import pandas as pd
 
 from rich.progress import track
 
+
 def main():
     """
     Solution for the ProKI Hackathon 2024.
@@ -25,11 +26,7 @@ def main():
 
     # compute the solution for each row
     results = []
-    for _, row in track(
-        input_df.iterrows(),
-        description="Computing the solutions for each row",
-        total=len(input_df),
-    ):
+    for _, row in track(input_df.iterrows(), description="Computing the solutions for each row", total=len(input_df), ):
         part_image_path = Path(row["part"])
         gripper_image_path = Path(row["gripper"])
         assert part_image_path.exists(), f"{part_image_path} does not exist"

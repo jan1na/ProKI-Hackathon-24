@@ -1,7 +1,8 @@
 import numpy as np
+from scipy.ndimage import rotate
+
 from deeplabv3_resnet101_preprocessing import predict
 from preprocessing_utils import get_gripper_binary
-from scipy.ndimage import rotate
 
 inv_part_mask: np.ndarray
 gripper_mask: np.ndarray
@@ -83,11 +84,9 @@ def simulated_annealing(initial_solution: (int, int, float)) -> (int, int, float
     for i in range(max_iter):
         # Generate a neighbor solution by making a small random change
         shifts = np.random.randint(-1, 2, size=2)
-        neighbor_solution = [
-            max(0, min(current_solution[0] + shifts[0], inv_part_mask.shape[1] - 1)),
+        neighbor_solution = [max(0, min(current_solution[0] + shifts[0], inv_part_mask.shape[1] - 1)),
             max(0, min(current_solution[1] + shifts[1], inv_part_mask.shape[0] - 1)),
-            (current_solution[2] + np.random.uniform(-5, 5)) % 360
-        ]
+            (current_solution[2] + np.random.uniform(-5, 5)) % 360]
 
         neighbor_value, not_outside = objective_function(*neighbor_solution)
 

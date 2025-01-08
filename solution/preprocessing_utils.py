@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.ndimage import convolve
 from PIL import Image
+from scipy.ndimage import convolve
 
 
 def get_gripper_binary(gripper_image_path: str) -> np.ndarray:
@@ -20,7 +20,7 @@ def get_gripper_binary(gripper_image_path: str) -> np.ndarray:
     for i in range(size):
         for j in range(size):
             # Calculate Euclidean distance from (i, j) to center (cx, cy)
-            if np.sqrt((i - radius)**2 + (j - radius)**2) <= radius:
+            if np.sqrt((i - radius) ** 2 + (j - radius) ** 2) <= radius:
                 kernel[i, j] = 1
 
     # pad binary image so the bigger gripper fits into the matrix
