@@ -1,6 +1,6 @@
 import numpy as np
 from deeplabv3_resnet101_preprocessing import predict
-from janina_preprocessing import get_gripper_binary
+from preprocessing_utils import get_gripper_binary
 from scipy.ndimage import rotate
 
 inv_part_mask: np.ndarray

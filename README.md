@@ -5,7 +5,6 @@ Team members:
 ## Installation
 ```bash
 pip install -r requirements.txt
-pip install git+https://github.com/qubvel/segmentation_models.git
 ```
 ## Description
 This project provides a solution for extracting the precise coordinates (x, y) and orientation (angle) 
