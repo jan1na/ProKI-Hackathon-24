@@ -1,3 +1,10 @@
 pandas
 numpy
 rich
+opencv-python
+cvzone
+Pillow
+matplotlib
+scipy
+torch
+torchvision

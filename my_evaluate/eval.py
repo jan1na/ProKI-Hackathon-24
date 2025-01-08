@@ -131,9 +131,9 @@ def main():
 
     # Paths
     directory = Path(__file__).parent
-    input_file = directory / "task.csv"
-    output_file = directory / "tool_output.csv"
-    ground_truth_file = directory / "ground_truth.csv"
+    input_file = directory / "task_all.csv"
+    output_file = directory / "tool_output_all.csv"
+    ground_truth_file = directory / "ground_truth_all.csv"
 
     # Call the program
     return_code = check_call([*command.split(" "), str(input_file), str(output_file)])
@@ -168,6 +168,16 @@ def main():
         # Check constraint
         # load mask image from ground truth
         mask_image = cv2.imread(Path(ground_truth_row["mask"]), cv2.IMREAD_UNCHANGED)
+
+        # Create a binary mask (fix for my red masks)
+        # The background is white (1) and red areas are black (0)
+        binary_mask = ~((mask_image[:, :, 2] > 0) & (mask_image[:, :, 3] > 0))
+
+        # Convert to a 3-channel binary mask (h, w, 3) with 255 for white and 0 for black
+        binary_mask_3d = np.stack([binary_mask.astype(np.uint8) * 255] * 3, axis=-1)
+
+        mask_image = binary_mask_3d
+
         # load gripper image from ground truth
         gripper_image = cv2.imread(
             Path(ground_truth_row["gripper"]), cv2.IMREAD_UNCHANGED

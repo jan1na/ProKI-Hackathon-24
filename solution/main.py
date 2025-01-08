@@ -1,27 +1,19 @@
-from pathlib import Path
 from argparse import ArgumentParser
+from pathlib import Path
+from simulated_annealing import find_best_gripper_position
 
-from rich.progress import track
 import pandas as pd
 
-
-def compute_amazing_solution(
-    part_image_path: Path, gripper_image_path: Path
-) -> tuple[float, float, float]:
-    """Compute the solution for the given part and gripper images.
-
-    :param part_image_path: Path to the part image
-    :param gripper_image_path: Path to the gripper image
-    :return: The x, y and angle of the gripper
-    """
-
-    return 100.1, 95, 91.2
+from rich.progress import track
 
 
 def main():
-    """The main function of your solution.
-
-    Feel free to change it, as long as it maintains the same interface.
+    """
+    Solution for the ProKI Hackathon 2024.
+    Pipeline:
+    1. Predict a grayscale mask of the part image with a fine-tuned DeepLabV3Plus model
+    2. Post-process the output with thresholding and erosion to get a binary mask
+    3. Compute the best gripper position on the binary mask using simulated annealing
     """
 
     parser = ArgumentParser()
@@ -34,16 +26,12 @@ def main():
 
     # compute the solution for each row
     results = []
-    for _, row in track(
-        input_df.iterrows(),
-        description="Computing the solutions for each row",
-        total=len(input_df),
-    ):
+    for _, row in track(input_df.iterrows(), description="Computing the solutions for each row", total=len(input_df), ):
         part_image_path = Path(row["part"])
         gripper_image_path = Path(row["gripper"])
         assert part_image_path.exists(), f"{part_image_path} does not exist"
         assert gripper_image_path.exists(), f"{gripper_image_path} does not exist"
-        x, y, angle = compute_amazing_solution(part_image_path, gripper_image_path)
+        x, y, angle = find_best_gripper_position(part_image_path, gripper_image_path)
         results.append([str(part_image_path), str(gripper_image_path), x, y, angle])
 
     # save the results to the output csv file
