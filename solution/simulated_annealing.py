@@ -153,4 +153,5 @@ def find_best_gripper_position(part_image_path: str, gripper_image_path: str, nu
             best_solution = current_solution
             best_value = current_value
 
-    return best_solution[0], best_solution[1], best_solution[2]
+    # fix angle to get the positive angle for a counterclockwise rotation
+    return best_solution[0], best_solution[1], 360 - best_solution[2]

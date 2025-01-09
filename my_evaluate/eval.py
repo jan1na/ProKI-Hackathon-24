@@ -190,8 +190,8 @@ def main():
         # Extract x, y, and angle from output_row
         x_output = int(output_row["x"])
         y_output = int(output_row["y"])
-        angle_output = int(output_row["angle"])
-
+        angle_output = -int(output_row["angle"])
+        
         # Overlay gripper on part
         res, intersect = overlay_gripper_on_part(
             gripper_image=gripper_image,
@@ -214,8 +214,10 @@ def main():
     # Write the updated DataFrame back to the output file
     outputs.to_csv(output_file, index=False)
 
-    print(f"Average score: {outputs["score"].mean()}")
+    print(f'Average score: {outputs["score"].mean()}')
 
+    # Write the updated DataFrame back to the output file
+    outputs.to_csv(output_file, index=False)
 
 if __name__ == "__main__":
     main()
