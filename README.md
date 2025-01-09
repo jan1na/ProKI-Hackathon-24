@@ -3,9 +3,13 @@ Team members:
 - Philipp Hinz
 - Janina Fritzke
 ## Installation
+In python 3.12, install the required packages using the following command:
 ```bash
 pip install -r requirements.txt
 ```
+Please also download the fine-tuned model from [here](https://drive.google.com/file/d/1yZR7h0FJKWJrmN4wQ2aYjTeRfUwfUd_K/view?usp=drive_link)
+and replace it with the model in the 'solution' folder, because the model is too big for GitHub and does not work after down and uploading.
+
 ## Description
 This project provides a solution for extracting the precise coordinates (x, y) and orientation (angle) 
 of grippers from images of metal parts. Developed during a hackathon, it combines advanced deep learning 
