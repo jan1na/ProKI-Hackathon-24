@@ -1,4 +1,5 @@
-# Hackathon 2024 - Submission of Group *Darmstadt Intelligence Technologies*
+# Machine Vision for Automated Robotic Handling
+### Hackathon 2024 - Submission of Group *Darmstadt Intelligence Technologies*
 Team members:
 - Philipp Hinz
 - Janina Fritzke
