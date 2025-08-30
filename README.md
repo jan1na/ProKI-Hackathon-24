@@ -21,7 +21,7 @@ optimal gripper placements.
 Here's an overview of the solution:
 
 **1. Image Segmentation**:
-We fine-tuned a DeepLabV3-Plus model to generate masks of the input image. 
+We fine-tuned a DeepLabV3 model to generate masks of the input image. 
 
 **2. Post-Processing**:
 The model's output was processed using thresholding and erosion to generate binary masks.
@@ -37,9 +37,9 @@ python solution/main.py path/to/input/tasks.csv output/solutions.csv
 
 ## Pipeline
 
-### Step 1: Fine-Tuning the DeepLabV3-Plus Model
+### Step 1: Fine-Tuning the DeepLabV3 Model
 
-To achieve high-quality segmentation, we fine-tuned the DeepLabV3-Plus model (ResNet101 backbone) with custom masks:
+To achieve high-quality segmentation, we fine-tuned the DeepLabV3 model (ResNet101 backbone) with custom masks:
 - **Dataset Creation**: We hand-painted masks for 42 images, paired each mask with its original 
 and inverted image, resulting in 84 image-mask pairs. Then, we augmented the data with 10 
 variations per pair.
@@ -100,7 +100,7 @@ Several approaches were tested for preprocessing, including:
 10 hand-painted masks.
 - The results were suboptimal, possibly due to limitations of the pre-trained model.
 
-#### DeepLabV3-Plus with ResNet101 backbone Fine-Tuning (Final Approach):
+#### DeepLabV3 with ResNet101 backbone Fine-Tuning (Final Approach):
 - Provided better results than UNet, though post-processing was critical for achieving a usable binary mask.
 
 #### Segment-Anything fine-tuning
